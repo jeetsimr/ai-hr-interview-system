@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>HR Candidate Dashboard</title>
+
+<style>
+
+*{
+box-sizing:border-box;
+}
+
+body{
+font-family:'Segoe UI',sans-serif;
+background:linear-gradient(135deg,#667eea,#764ba2);
+margin:0;
+padding:40px;
+}
+
+.container{
+background:white;
+max-width:1200px;
+margin:auto;
+padding:40px;
+border-radius:14px;
+box-shadow:0 25px 60px rgba(0,0,0,0.25);
+}
+
+h1{
+text-align:center;
+margin-bottom:10px;
+}
+
+.stats{
+text-align:center;
+color:#555;
+margin-bottom:25px;
+font-size:15px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+overflow:hidden;
+border-radius:10px;
+}
+
+thead{
+position:sticky;
+top:0;
+}
+
+th{
+background:linear-gradient(90deg,#4f46e5,#6366f1);
+color:white;
+padding:14px;
+font-size:15px;
+}
+
+td{
+padding:14px;
+border-bottom:1px solid #eee;
+font-size:14px;
+}
+
+tr{
+transition:.2s;
+}
+
+tr:hover{
+background:#f6f8ff;
+transform:scale(1.01);
+}
+
+.top{
+background:#ecfdf5;
+}
+
+.score-high{
+color:#16a34a;
+font-weight:bold;
+font-size:16px;
+}
+
+.score-medium{
+color:#eab308;
+font-weight:bold;
+font-size:16px;
+}
+
+.score-low{
+color:#dc2626;
+font-weight:bold;
+font-size:16px;
+}
+
+.badge{
+padding:6px 12px;
+border-radius:20px;
+font-size:12px;
+font-weight:600;
+}
+
+.badge-top{
+background:#22c55e;
+color:white;
+}
+
+.badge-consider{
+background:#facc15;
+}
+
+.badge-reject{
+background:#ef4444;
+color:white;
+}
+
+.empty{
+text-align:center;
+padding:40px;
+color:#777;
+}
+
+.footer{
+margin-top:25px;
+text-align:center;
+font-size:13px;
+color:#777;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>HR Candidate Dashboard</h1>
+
+<div class="stats" id="candidateCount">Loading candidates...</div>
+
+<table>
+
+<thead>
+<tr>
+<th>Name</th>
+<th>Email</th>
+<th>Qualification</th>
+<th>Experience</th>
+<th>Last Company</th>
+<th>AI Score</th>
+<th>Status</th>
+</tr>
+</thead>
+
+<tbody id="tableBody">
+
+<tr>
+<td colspan="7" class="empty">Loading candidates...</td>
+</tr>
+
+</tbody>
+
+</table>
+
+<div class="footer">
+AI Interview Screening System
+</div>
+
+</div>
+
+<script>
+
+async function loadCandidates(){
+
+try{
+
+const response = await fetch("http://127.0.0.1:8000/candidates")
+
+const data = await response.json()
+
+const table = document.getElementById("tableBody")
+
+table.innerHTML = ""
+
+document.getElementById("candidateCount").innerText =
+"Total Candidates: " + data.length
+
+if(data.length === 0){
+
+table.innerHTML = `
+<tr>
+<td colspan="7" class="empty">No candidates found</td>
+</tr>
+`
+
+return
+}
+
+data.sort((a,b)=>(b.ai_score || 0)-(a.ai_score || 0))
+
+data.forEach((candidate,index)=>{
+
+let score = candidate.ai_score ?? 0
+
+let scoreClass="score-low"
+
+if(score>=75) scoreClass="score-high"
+else if(score>=60) scoreClass="score-medium"
+
+let status="Review"
+
+if(score>=75)
+status='<span class="badge badge-top">Top Candidate</span>'
+else if(score>=60)
+status='<span class="badge badge-consider">Consider</span>'
+else
+status='<span class="badge badge-reject">Reject</span>'
+
+let highlight=index<3?"top":""
+
+let row=`
+<tr class="${highlight}">
+<td>${candidate.name || "-"}</td>
+<td>${candidate.email || "-"}</td>
+<td>${candidate.qualification || "-"}</td>
+<td>${candidate.experience_years || "-"}</td>
+<td>${candidate.last_company || "-"}</td>
+<td class="${scoreClass}">${score}</td>
+<td>${status}</td>
+</tr>
+`
+
+table.innerHTML += row
+
+})
+
+}catch(error){
+
+document.getElementById("tableBody").innerHTML = `
+<tr>
+<td colspan="7" class="empty">Failed to load candidates</td>
+</tr>
+`
+
+}
+
+}
+
+loadCandidates()
+
+// Auto refresh every 5 seconds
+setInterval(loadCandidates,5000)
+
+</script>
+
+</body>
+</html>
